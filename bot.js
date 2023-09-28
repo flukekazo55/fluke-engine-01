@@ -1,31 +1,36 @@
-const Discord = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 const axios = require('axios');
 
-const client = new Discord.Client();
-const TOKEN = 'DISCORD_BOT_TOKEN';
-const OPEN_DOTA_API_URL = 'https://api.opendota.com/api/';
-
-client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}`);
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
-client.on('message', async (message) => {
-  if (message.content.startsWith('!fe01-dota2')) {
-    const heroName = message.content.substring(6).toLowerCase();
-    
+const TOKEN = 'MTE1Njg2MzI2NzkyMzMxNjc3Nw.GD2sDp.ASC1RJk2NRzrTvXFU2yjSbw0Qc931wZv4XIRYE';
+const OPEN_DOTA_API_URL = 'https://api.opendota.com/api/';
+
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+}); 
+
+client.on('messageCreate', async (message) => {
+  if (message.content.startsWith('!fe01-dota')) {
+    const heroName = message.content.substring(10).toLowerCase(); // Updated substring length
+
+    console.log(`Received command: !fe01-dota ${heroName}`); // Debugging line
+
     try {
       const response = await axios.get(`${OPEN_DOTA_API_URL}heroes`);
       const heroes = response.data;
       const hero = heroes.find((h) => h.localized_name.toLowerCase() === heroName);
 
       if (hero) {
-        const embed = new Discord.MessageEmbed()
+        const embed = new MessageEmbed()
           .setTitle(hero.localized_name)
           .addField('Primary Attribute', hero.primary_attr)
           .addField('Attack Type', hero.attack_type)
           .addField('Roles', hero.roles.join(', '));
 
-        message.channel.send(embed);
+        message.channel.send({ embeds: [embed] });
       } else {
         message.channel.send('Hero not found.');
       }
