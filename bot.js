@@ -1,30 +1,30 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-// Import necessary modules
-var discord_js_1 = require("discord.js");
-// Create a new Discord client with intents
-var client = new discord_js_1.Client({
-    intents: [
-        discord_js_1.GatewayIntentBits.Guilds,
-        discord_js_1.GatewayIntentBits.GuildMessages // Enable message-related events
-    ]
+const Discord = require('discord.js');
+const axios = require('axios');
+
+const client = new Discord.Client();
+const TOKEN = 'MTE1Njg2MzI2NzkyMzMxNjc3Nw.G73FQe.b_X-x19HTqY5KihmNmB0bpaLYhbXhHxaT0w-s8';
+const STEAM_API_KEY = '58B264FB215EB32A9EE8F8E968708C0D';
+
+client.on('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
 });
-// Set your Discord bot token
-var TOKEN = 'MTE1Njg2MzI2NzkyMzMxNjc3Nw.GprvnP.lDxRxtvcF_klc9_HfvJB4MuZvfkK137LKdNJlI';
-// Register an event for when the bot is ready
-client.once('ready', function () {
-    var _a;
-    console.log("Logged in as ".concat((_a = client.user) === null || _a === void 0 ? void 0 : _a.tag));
-});
-// Register an event for when a message is received
-client.on('messageCreate', function (message) {
-    // Check if the message is from a bot or doesn't start with a specific command prefix
-    if (message.author.bot || !message.content.startsWith('!dota2')) {
-        return;
+
+client.on('message', async (message) => {
+  if (message.content === '!dota2info') {
+    try {
+      const response = await axios.get(
+        `https://api.steampowered.com/IDOTA2Match_570/GetGameItems/V001/?key=${STEAM_API_KEY}`
+      );
+
+      // Parse and send Dota 2 information
+      const data = response.data;
+      message.channel.send('Dota 2 Game Information:');
+      message.channel.send(JSON.stringify(data, null, 2));
+    } catch (error) {
+      console.error('Error fetching Dota 2 data:', error);
+      message.channel.send('An error occurred while fetching Dota 2 data.');
     }
-    // Your Dota 2 API logic here to fetch and send Dota 2 details
-    // Example: Send a message indicating Dota 2 details will be displayed
-    message.channel.send('Fetching Dota 2 details...');
+  }
 });
-// Log in to Discord with your bot's token
+
 client.login(TOKEN);
