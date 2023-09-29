@@ -20,8 +20,7 @@ const client = new Client({
   partials: [Partials.Channel],
 });
 
-const TOKEN =
-  "MTE1Njg2MzI2NzkyMzMxNjc3Nw.GQlmv6.moAtXa2uHxXDzX1slul8v-xkjnL21XMC9m8c0Y"; // Replace with your bot token
+const TOKEN = "TOKEN"; // Replace with your bot token
 const OPEN_DOTA_API_URL = "https://api.opendota.com/api/";
 
 client.once("ready", () => {
@@ -68,8 +67,8 @@ client.on("messageCreate", async (message) => {
     try {
       const response = await axios.get(`${OPEN_DOTA_API_URL}heroes`);
       const heroes = response.data;
-      const hero = heroes.find(
-        (h) => h.localized_name.toLowerCase().include(heroName)
+      const hero = heroes.find((h) =>
+        h.localized_name.toLowerCase().include(heroName)
       );
       if (hero) {
         const embed = {
