@@ -5,6 +5,7 @@ const {
   ButtonBuilder,
   ButtonStyle,
   Partials,
+  EmbedBuilder 
 } = require("discord.js"); // Import MessagePayload and MessageButton for buttons
 
 const axios = require("axios");
@@ -21,34 +22,21 @@ const client = new Client({
 });
 
 const TOKEN = "TOKEN"; // Replace with your bot token
-const OPEN_DOTA_API_URL = "https://api.opendota.com/api/";
+
+const DOTA_HERO_LIST_API_URL = "https://www.dota2.com/datafeed/herolist?language=english";
+const DOTA_HERO_DATA_API_URL = "https://www.dota2.com/datafeed/herodata?language=english";
+
+function removeDiacritics(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+}
 
 client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
 client.on("messageCreate", async (message) => {
-  console.log(
-    "===================================================================================================="
-  );
-  console.log("message: ", message);
-
   if (message.author.bot) {
     return; // Ignore messages from bots.
-  }
-
-  const banList = ["gun_nies", "ไอ้แจ็คคคค!!!"];
-  if (banList.find((x) => x === message.author.username)) {
-    const embed = {
-      title: `สวัสดี คุณ ${message.author.globalName}`,
-      fields: [
-        {
-          name: "",
-          value: `ควยไรไอ้ ${message.author.globalName} ตกใจน่ะสิ อืมๆ เข้าใจๆ...`,
-        },
-      ],
-    };
-    message.channel.send({ embeds: [embed] });
   }
 
   if (!message.content) {
@@ -63,41 +51,37 @@ client.on("messageCreate", async (message) => {
   }
 
   if (message.content.startsWith("!fe01-dota")) {
-    const heroName = message.content.split(/\s+/)[1]; // Updated substring length
+    const heroName = removeDiacritics(message.content.replace(/^!fe01-dota /, '')); // Updated substring length
+    console.log("heroName: ", heroName);
+
     try {
-      const response = await axios.get(`${OPEN_DOTA_API_URL}heroes`);
-      const heroes = response.data;
-      const hero = heroes.find((h) =>
-        h.localized_name.toLowerCase().include(heroName)
-      );
+      const response = await axios.get(`${DOTA_HERO_LIST_API_URL}`);
+      let heroes = response.data.result.data.heroes;
+      heroes.sort((a, b) => a.name.localeCompare(b.name));
+      const hero = heroes.find((h) => h.name_loc.replace(/[^a-zA-Z]/g, '').toLowerCase() === heroName.replace(/[^a-zA-Z]/g, '').toLowerCase());
+      console.log("hero: ", hero);
+
       if (hero) {
-        const embed = {
-          title: hero.localized_name,
-          fields: [
-            { name: "Primary Attribute", value: hero.primary_attr },
-            { name: "Attack Type", value: hero.attack_type },
-            { name: "Roles", value: hero.roles.join(", ") },
-          ],
-        };
+        const responseDetail = await axios.get(`${DOTA_HERO_DATA_API_URL}&hero_id=${hero.id}`);
+        const heroDetail = responseDetail.data.result.data.heroes[0];
+        console.log("heroDetail: ", heroDetail);
 
-        // Create a button to view more hero information
-        const button = new ButtonBuilder()
-          .setCustomId("view_hero")
-          .setLabel("รายละเอียด")
-          .setStyle(ButtonStyle.Primary);
+        const about = heroDetail.hype_loc.replace(/<\/?b>/g, '');
+        const heroImg = heroDetail.name.split("_").slice(3).join("_");
 
-        // Create an action row to contain the button
-        const row = new ActionRowBuilder().addComponents(button);
+        // inside a command, event listener, etc.
+        const embed = new EmbedBuilder()
+        .setColor(0x0099FF)
+        .setTitle(`${heroDetail.name_loc}`)
+        .setURL(`https://www.dota2.com/hero/${heroDetail.name_loc.replace(/\s+/g, '').toLowerCase()}`)
+        .setDescription(`${heroDetail.npe_desc_loc}`)
+        .addFields(
+          { name: 'About', value: `${about}` },
+        )
+        .setImage(`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${heroImg}.png`)
+        .setTimestamp()
 
-        // Create the message payload
-        const payload = {
-          content: "ข้อมูล:",
-          embeds: [embed],
-          components: [row],
-        };
-
-        // Send the message using MessagePayload
-        message.channel.send(payload);
+        message.channel.send({embeds: [embed]});
       } else {
         message.channel.send("ไม่พบข้อมูล...");
       }
@@ -114,7 +98,7 @@ client.on("interactionCreate", async (interaction) => {
   if (!interaction.isButton()) return;
 
   if (interaction.customId === "view_hero") {
-    const heroInfo = "อยากรู้อะไรนักวะห้ะ...";
+    const heroInfo = "ต่างคนต่างคิด ชีวิตคนละแบบ...";
     interaction.followUp({ content: heroInfo });
   }
 });
